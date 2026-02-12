@@ -56,7 +56,7 @@ def readOneFile(f, tileType, device):
     for i in range(tables):
         typ = rint(f, 4)
         size = rint(f, 4)
-        #print(hex(f.tell()), " Table type", typ, "/", hex(typ), "of size", size)
+        # print(hex(f.tell()), " Table type", typ, "/", hex(typ), "of size", size)
         if typ == 61:
             size2 = rint(f, 4)
             typn = "grid"
@@ -99,7 +99,10 @@ def readOneFile(f, tileType, device):
                      0x51, 0x53, 0x55, 0x57, 0x5c}:
             typn = "logicinfo"
             t = readTable(f, size, 3, 2)
-        elif typ in {0x12, 0x13, 0x35, 0x36, 0x3a}:
+        elif typ in {0x35, 0x36, }:
+            typn = "longfuse"
+            t = readTable(f, size, 14, 2)
+        elif typ in {0x12, 0x13, 0x3a, }:
             typn = "longfuse"
             t = readTable(f, size, 17, 2)
         elif typ in {0x17, 0x18, 0x25, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f}:
@@ -121,7 +124,7 @@ def readOneFile(f, tileType, device):
             typn = "drpfuse"
             t = readTable(f, size, 10, 2)
         else:
-            raise ValueError("Unknown type {} at {}".format(hex(typ), hex(f.tell())))
+            raise ValueError("Unknown type {} {} at {}".format(hex(typ), size, hex(f.tell())))
         tmap.setdefault(typn, {})[typ] = t
     return tmap
 

@@ -3554,6 +3554,7 @@ def from_fse(device, fse, dat: Datfile):
     ttypes = {t for row in fse['header']['grid'][61] for t in row}
     tiles = {}
     bram_ttypes = get_tile_types_by_func(dev, dat, fse, 'B')
+
     bram_aux_ttypes = get_tile_types_by_func(dev, dat, fse, 'b')
     dsp_ttypes = get_tile_types_by_func(dev, dat, fse, 'D')
     dsp_aux_ttypes = get_tile_types_by_func(dev, dat, fse, 'd')
@@ -3604,7 +3605,6 @@ def from_fse(device, fse, dat: Datfile):
         dev.tile_types['D'] = set()
     if device in {'GW5AST-138C'}:
         dev.tile_types['P'] = set()
-        dev.tile_types['B'] = set()
         dev.tile_types['D'] = set()
 
     # GW5 series have DFF6 and DFF7, so leave Q6 and Q7 as is
