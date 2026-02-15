@@ -3409,15 +3409,18 @@ def place(db, tilemap, bels, cst, args, slice_attrvals, extra_slots):
         elif typ in _bsram_cell_types or typ == 'BSRAM_AUX':
             if typ == 'BSRAM_AUX':
                 typ = cell['type']
-            elif device in {'GW5A-25A'}:
+            elif device in {'GW5A-25A', 'GW5AST-138C'}:
                 bisect.insort(gw5a_bsrams, (col - 1, row - 1, typ, parms, attrs))
             else:
                 store_bsram_init_val(db, row - 1, col -1, typ, parms, attrs)
             bsram_attrs = set_bsram_attrs(db, cell, typ, parms)
-            bsrambits = get_shortval_fuses(db, tiledata.ttyp, bsram_attrs, f'BSRAM_{typ}')
-            #print(f'({row - 1}, {col - 1}) attrs:{bsram_attrs}, bits:{bsrambits}')
-            for brow, bcol in bsrambits:
-                tile[brow][bcol] = 1
+            try:
+                bsrambits = get_shortval_fuses(db, tiledata.ttyp, bsram_attrs, f'BSRAM_{typ}')
+                #print(f'({row - 1}, {col - 1}) attrs:{bsram_attrs}, bits:{bsrambits}')
+                for brow, bcol in bsrambits:
+                    tile[brow][bcol] = 1
+            except:
+                pass
         elif typ in {'MULTADDALU18X18', 'MULTALU36X18', 'MULTALU18X18', 'MULT36X36', 'MULT18X18', 'MULT9X9', 'PADD18', 'PADD9', 'ALU54D'} or typ == 'DSP_AUX':
             if typ == 'DSP_AUX':
                 typ = cell['type']
@@ -4347,7 +4350,7 @@ def main():
             store_bsram_init_val(db, row, col, typ, parms, attrs, map_offset)
 
         bsram_init_map = bitmatrix.transpose(bsram_init_map)
-        bslib.write_bitstream(args.output, main_map, db.cmd_hdr, db.cmd_ftr, args.compress, extra_slots, bsram_init_map, gw5a_bsrams)
+        bslib.write_bitstream(args.output, main_map, db.cmd_hdr, db.cmd_ftr, args.compress, extra_slots, bsram_init_map, gw5a_bsrams, is_gw5a_138=(device == 'GW5AST-138C'))
     elif bsram_init_map:
         bslib.write_bitstream_with_bsram_init(args.output, main_map, db.cmd_hdr, db.cmd_ftr, args.compress, extra_slots, bsram_init_map)
     else:
