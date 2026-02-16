@@ -163,13 +163,13 @@ def store_bsram_init_val(db, row, col, typ, parms, attrs, map_offset = 0):
     attrs_upper(attrs)
     subtype = attrs['BSRAM_SUBTYPE']
     if not bsram_init_map:
-        if device in {'GW5A-25A'}:
+        if device in {'GW5A-25A', 'GW5AST-138C'}:
             # 72 * bsram rows * chip bit width
             bsram_init_map = bitmatrix.zeros(72 * len(db.simplio_rows), db.width)
         else:
             # 256 * bsram rows * chip bit width
             bsram_init_map = bitmatrix.zeros(256 * len(db.simplio_rows), db.width)
-    if device in {'GW5A-25A'}:
+    if device in {'GW5A-25A', 'GW5AST-138C'}:
         # 1 BSRAM cell have width 72
         loc_map = bitmatrix.zeros(256, 72)
     else:
@@ -221,7 +221,7 @@ def store_bsram_init_val(db, row, col, typ, parms, attrs, map_offset = 0):
 
     # now put one cell init data into global space
     height = 256
-    if device in {'GW5A-25A'}:
+    if device in {'GW5A-25A', 'GW5AST-138C'}:
         height = 72
         loc_map = bitmatrix.transpose(loc_map)
     y = 0
@@ -230,7 +230,7 @@ def store_bsram_init_val(db, row, col, typ, parms, attrs, map_offset = 0):
             break
         y += height
 
-    if device in {'GW5A-25A'}:
+    if device in {'GW5A-25A', 'GW5AST-138C'}:
         x = 256 * map_offset
     else:
         x = 0

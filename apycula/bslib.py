@@ -293,7 +293,7 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
     f.write('\n')
     for start, cnt in block_seq.items():
         # set address
-        if start != 1:
+        if start != 0:
             ba = bytearray(2738)
             ba[0] = 0x98
             ba[2720 - 45 * start] = (1 << 6) # onehot address ??
@@ -332,6 +332,12 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
         crc_ = calc.checksum(crcdat)
         crcdat = bytearray()
         f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
+        f.write('\n')
+
+        ba = bytearray(8)
+        ba[0] = 0x68
+        crcdat.extend(ba)
+        f.write(''.join(f"{b:08b}" for b in ba))
         f.write('\n')
 
 def write_bitstream_with_bsram_init(fname, bs, hdr, ftr, compress, extra_slots, bsram_init):
