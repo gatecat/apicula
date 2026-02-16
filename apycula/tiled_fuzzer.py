@@ -310,6 +310,9 @@ if __name__ == "__main__":
 
     dat = dat19.Datfile(Path(f"{gowinhome}/IDE/share/device/{params['device']}/{params['device']}.dat"))
 
+    if params['device'] == "GW5AST-138C":
+        dat.patch_grid_bram_138()
+
     if gowin_debug:
         with open(f"{device}-dat.pickle", 'wb') as f:
             pickle.dump(dat, f)
