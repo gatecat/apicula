@@ -318,9 +318,9 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
             f.write(''.join(f"{b:08b}" for b in data_row))
             crcdat.extend(data_row)
             crc_ = calc.checksum(crcdat)
-            crcdat = bytearray(b'\xff'*6)
             if i < 4:
-                print(f"crc {crc_&0xff:08b}{crc_>>8:08b}")
+                print(f"crc {crc_&0xff:08b}{crc_>>8:08b} {len(crcdat)}")
+            crcdat = bytearray(b'\xff'*6)
             f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
             f.write('1'*48)
             f.write('\n')
@@ -334,12 +334,6 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
         crc_ = calc.checksum(crcdat)
         crcdat = bytearray()
         f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
-        f.write('\n')
-
-        ba = bytearray(8)
-        ba[0] = 0x68
-        crcdat.extend(ba)
-        f.write(''.join(f"{b:08b}" for b in ba))
         f.write('\n')
 
 def write_bitstream_with_bsram_init(fname, bs, hdr, ftr, compress, extra_slots, bsram_init):

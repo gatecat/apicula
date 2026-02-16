@@ -3985,7 +3985,7 @@ def header_footer(db, bs, compress):
     checksum = res & 0xffff
     # set the checksum
     db.cmd_ftr[1] = bytearray.fromhex(f"{0x0A << 56 | checksum:016x}")
-    if device in {'GW5A-25A'}:
+    if device in {'GW5A-25A', 'GW5AST-138C'}:
         db.cmd_ftr.insert(1, bytearray(b'\x68\x00\x00\x00\x00\x00\x00\x00'))
 
 def gsr(db, tilemap, args):
