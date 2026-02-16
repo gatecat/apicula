@@ -298,8 +298,8 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
             ba[0] = 0x98
             ba[2720 - 45 * start] = (1 << 6) # onehot address ??
             f.write(''.join(f"{b:08b}" for b in ba))
-            crcdat.extend(ba)
             f.write('\n')
+            # 0x98 command is *not* included in CRC calculation
 
         # data cols
         ba = bytearray(b'\x4e\x80')
@@ -324,6 +324,18 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
             f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
             f.write('1'*48)
             f.write('\n')
+            if i == 255 and start == 0:
+                # extra row
+                extra_row = bytearray(len(data_row))
+                f.write(''.join(f"{b:08b}" for b in extra_row))
+                crcdat.extend(extra_row)
+                crc_ = calc.checksum(crcdat)
+                if i < 4:
+                    print(f"crc {crc_&0xff:08b}{crc_>>8:08b} {len(crcdat)}")
+                crcdat = bytearray(b'\xff'*6)
+                f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
+                f.write('1'*48)
+                f.write('\n')
 
         data_first_col += 256 * cnt
 
