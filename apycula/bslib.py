@@ -125,8 +125,21 @@ def read_bitstream(fname):
                         is5ASeries = True
                     else:
                         raise ValueError("Unsupported device", ba)
-                if not preamble: #
-                    print(f"found command {ba[0]:02x} {len(ba)}")
+                if not preamble:
+                    if ba[0] == 0x98:
+                        print("set bram address: ")
+                        for i, b in enumerate(ba):
+                            if i < 4:
+                                continue
+                            if b == 0:
+                                continue
+                            for j in range(8):
+                                if b & (1 << j) != 0:
+                                    print(f"    ({i}, {j})")
+                    elif len(ba) >= 4:
+                        print(f"found command {ba[0]:02x} {ba[1]:02x} {ba[2]:02x} {ba[3]:02x} {len(ba)}")
+                    else:
+                        print(f"found command {ba[0]:02x} {len(ba)}")
                 preamble = max(0, preamble-1)
                 continue
             if is5ASeries == False:
@@ -279,26 +292,23 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
     f.write(''.join(f"{b:08b}" for b in ba))
     f.write('\n')
     for start, cnt in block_seq.items():
-        # empty cols
-        ba = bytearray(b'\x98\x00\x00')
-        crcdat.extend(ba)
-        f.write(''.join(f"{b:08b}" for b in ba))
-        ba = bytearray.fromhex(f"{start + 1:02x}")
-        crcdat.extend(ba)
-        f.write(''.join(f"{b:08b}" for b in ba))
-        ba = bytearray(b'\x00' * (start + 1))
-        crcdat.extend(ba)
-        f.write(''.join(f"{b:08b}" for b in ba))
+        # set address
+        if start != 1:
+            ba = bytearray(2738)
+            ba[0] = 0x98
+            ba[2720 - 45 * start] = (1 << 6) # onehot address ??
+            f.write(''.join(f"{b:08b}" for b in ba))
+            crcdat.extend(ba)
         f.write('\n')
 
         # data cols
         ba = bytearray(b'\x4e\x80')
         crcdat.extend(ba)
         f.write(''.join(f"{b:08b}" for b in ba))
-        ba = bytearray.fromhex(f"{cnt % 256 :02x}")
+        ba = bytearray.fromhex(f"{cnt:02x}")
         crcdat.extend(ba)
         f.write(''.join(f"{b:08b}" for b in ba))
-        ba = bytearray.fromhex(f"{cnt >> 8 :02x}")
+        ba = bytearray(b'\x01' if start == 0 else b'\x00')
         crcdat.extend(ba)
         f.write(''.join(f"{b:08b}" for b in ba))
         f.write('\n')
