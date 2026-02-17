@@ -225,7 +225,7 @@ def store_bsram_init_val(db, row, col, typ, parms, attrs, map_offset = 0):
         height = 72
         loc_map = bitmatrix.transpose(loc_map)
     y = 0
-    for brow in db.simplio_rows:
+    for brow in sorted(db.simplio_rows):
         if row == brow:
             break
         y += height

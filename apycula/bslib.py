@@ -313,29 +313,26 @@ def write_gw5_138_bsram_init_map(f, crcdat, calc, gw5a_bsram_init_map, gw5a_bsra
         f.write(''.join(f"{b:08b}" for b in ba))
         f.write('\n')
 
+        if start == 0:
+            # extra zero-filled frame (257 total) for first column
+            extra_row = bytearray(len(byteInitMap[data_first_col]))
+            f.write(''.join(f"{b:08b}" for b in extra_row))
+            crcdat.extend(extra_row)
+            crc_ = calc.checksum(crcdat)
+            crcdat = bytearray(b'\xff'*6)
+            f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
+            f.write('1'*48)
+            f.write('\n')
+
         # data
         for i, data_row in enumerate(byteInitMap[data_first_col : data_first_col + 256 * cnt]):
             f.write(''.join(f"{b:08b}" for b in data_row))
             crcdat.extend(data_row)
             crc_ = calc.checksum(crcdat)
-            if i < 4:
-                print(f"crc {crc_&0xff:08b}{crc_>>8:08b} {len(crcdat)}")
             crcdat = bytearray(b'\xff'*6)
             f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
             f.write('1'*48)
             f.write('\n')
-            if i == 255 and start == 0:
-                # extra row
-                extra_row = bytearray(len(data_row))
-                f.write(''.join(f"{b:08b}" for b in extra_row))
-                crcdat.extend(extra_row)
-                crc_ = calc.checksum(crcdat)
-                if i < 4:
-                    print(f"crc {crc_&0xff:08b}{crc_>>8:08b} {len(crcdat)}")
-                crcdat = bytearray(b'\xff'*6)
-                f.write(f"{crc_&0xff:08b}{crc_>>8:08b}")
-                f.write('1'*48)
-                f.write('\n')
 
         data_first_col += 256 * cnt
 
