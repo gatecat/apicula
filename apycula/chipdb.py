@@ -526,6 +526,11 @@ def fse_pll(device, fse, ttyp):
     elif device in {'GW5A-25A'}:
         # GW5A-25A does not use the main grid
         pass
+    elif device in {'GW5AST-138C'}:
+        if ttyp in {74, 268}:
+            bel = bels.setdefault('PLLA', Bel())
+        elif ttyp in {75, 76}:
+            bel = bels.setdefault('PLLB', Bel())
     return bels
 
 # add the ALU mode
@@ -953,6 +958,7 @@ def fse_fill_logic_tables(dev, fse, device):
     for ttyp in ttypes:
         if ttyp not in fse:
             continue
+        print(f"ttyp {ttyp}")
         if 'longfuse' in fse[ttyp]:
             ttyp_rec = dev.longfuses.setdefault(ttyp, {})
             for lftable in fse[ttyp]['longfuse']:
@@ -970,6 +976,8 @@ def fse_fill_logic_tables(dev, fse, device):
         if 'shortval' in fse[ttyp]:
             ttyp_rec = dev.shortval.setdefault(ttyp, {})
             for stable in fse[ttyp]['shortval']:
+                print(f"    stable {_known_tables.get(stable, str(stable))}")
+
                 if stable in _known_tables:
                     table = ttyp_rec.setdefault(_known_tables[stable], {})
                 else:
@@ -2580,7 +2588,7 @@ def fse_create_5a138_clocks(dev, device, dat: Datfile, fse):
     # create each half of the clock wires
     for half in range(2):
         clk_desc = get_clock_ins(device, dat)[half]
-        print(f"Create clock wires. Half:{half}")
+        #print(f"Create clock wires. Half:{half}")
         #for clk_idx, row, col, wire_idx in clk_desc:
         #    add_node(dev, mk_wname(wnames.clknames[clk_idx], half), "GLOBAL_CLK", row, col, wnames.wirenames[wire_idx])
         #    add_buf_bel(dev, row, col, wnames.wirenames[wire_idx])
@@ -2599,10 +2607,10 @@ def fse_create_5a138_clocks(dev, device, dat: Datfile, fse):
                         if ttyp in bridge_tile_types_138:
                             top_bottom, idx = spine_to_bridgeout(dest)
                             bridge_out_node = f'CBRIDGEOUT_{top_bottom}{idx}'
-                            print(row, col, ttyp, dest, 'BRIDGE', bridge_out_node)
+                            #print(row, col, ttyp, dest, 'BRIDGE', bridge_out_node)
                             add_node(dev, bridge_out_node, "GLOBAL_CLK", row, col, dest)
                         else:
-                            print(row, col, ttyp, dest)
+                            #print(row, col, ttyp, dest)
                             add_node(dev, mk_wname(dest, half), "GLOBAL_CLK", row, col, dest)
                         for src in { wire for wire in srcs.keys() if wire not in {'VCC', 'VSS'}}:
                             if src.startswith('PLL'):
@@ -2615,7 +2623,7 @@ def fse_create_5a138_clocks(dev, device, dat: Datfile, fse):
                                         add_node(dev, src, "GLOBAL_CLK", row, col, src)
                                     else:
                                         add_node(dev, mk_wname(src, half), "GLOBAL_CLK", row, col, src)
-                                print("  << in ", row, col, ttyp, mk_wname(src, half))
+                                #print("  << in ", row, col, ttyp, mk_wname(src, half))
 
     # GBx0 <- GBOx
     taps = {}
@@ -3098,7 +3106,7 @@ def fse_create_logic2clk(dev, device, dat: Datfile):
         for clkwire_idx, row, col, wire_idx in clk_desc:
             if row != -2:
                 add_node(dev, mk_clock_wname(device, wnames.clknames[clkwire_idx], half), "GLOBAL_CLK", row, col, wnames.wirenames[wire_idx])
-                print(clkwire_idx, row, col, wire_idx, mk_clock_wname(device, wnames.clknames[clkwire_idx], half))
+                #print(clkwire_idx, row, col, wire_idx, mk_clock_wname(device, wnames.clknames[clkwire_idx], half))
                 add_buf_bel(dev, row, col, wnames.wirenames[wire_idx])
                 # Make list of the clock gates for nextpnr
                 dev.extra_func.setdefault((row, col), {}).setdefault('clock_gates', []).append(wnames.wirenames[wire_idx])
@@ -3698,7 +3706,7 @@ def from_fse(device, fse, dat: Datfile):
         dev.tile_types['D5A'] = dev.tile_types['D']
         dev.tile_types['D'] = set()
     if device in {'GW5AST-138C'}:
-        dev.tile_types['P'] = set()
+        # dev.tile_types['P'] = set()
         dev.tile_types['D5A'] = dev.tile_types['D']
         dev.tile_types['D'] = set()
 
@@ -3928,11 +3936,37 @@ _plla_inputs = [(0, 'RESET'), (2, 'RESET_I'), (4, 'CLKIN'), (5, 'CLKFB'), (91, '
                 (202, 'SSCMDSEL_FRAC2'), (204, 'MDCLK'), (205, 'MDOPC0'), (206, 'MDOPC1'),
                 (207, 'MDAINC'), (208, 'MDWDI0'), (209, 'MDWDI1'), (210, 'MDWDI2'), (211, 'MDWDI3'),
                 (212, 'MDWDI4'), (213, 'MDWDI5'), (214, 'MDWDI6'), (215, 'MDWDI7'),]
+
+_pll_inputs_138 = [(0, 'RESET'), (2, 'RESET_I'), (4, 'CLKIN'), (5, 'CLKFB'), (6, 'FBDSEL0'),
+                   (7, 'FBDSEL1'), (8, 'FBDSEL2'), (9, 'FBDSEL3'), (10, 'FBDSEL4'), (11, 'FBDSEL5'),
+                   (12, 'IDSEL0'), (13, 'IDSEL1'), (14, 'IDSEL2'), (15, 'IDSEL3'), (16, 'IDSEL4'),
+                   (17, 'IDSEL5'), (83, 'ICPSEL0'), (84, 'ICPSEL1'), (85, 'ICPSEL2'), (86, 'ICPSEL3'),
+                   (87, 'ICPSEL4'), (88, 'LPFRES0'), (89, 'LPFRES1'), (90, 'LPFRES2'), (91, 'PSSEL0'),
+                   (92, 'PSSEL1'), (93, 'PSDIR'), (94, 'PSPULSE'), (100, 'PSSEL2'), (101, 'PLLPWD'),
+                   (102, 'RESET_O'), (113, 'ODSEL0_0'), (114, 'ODSEL0_1'), (115, 'ODSEL0_2'),
+                   (116, 'ODSEL0_3'), (117, 'ODSEL0_4'), (118, 'ODSEL0_5'), (119, 'ODSEL0_6'),
+                   (123, 'ODSEL1_0'), (124, 'ODSEL1_1'), (125, 'ODSEL1_2'), (126, 'ODSEL1_3'),
+                   (127, 'ODSEL1_4'), (128, 'ODSEL1_5'), (129, 'ODSEL1_6'), (130, 'ODSEL2_0'),
+                   (131, 'ODSEL2_1'), (132, 'ODSEL2_2'), (133, 'ODSEL2_3'), (134, 'ODSEL2_4'),
+                   (135, 'ODSEL2_5'), (136, 'ODSEL2_6'), (137, 'ODSEL3_0'), (138, 'ODSEL3_1'),
+                   (139, 'ODSEL3_2'), (140, 'ODSEL3_3'), (141, 'ODSEL3_4'), (142, 'ODSEL3_5'),
+                   (143, 'ODSEL3_6'), (144, 'ODSEL4_0'), (145, 'ODSEL4_1'), (146, 'ODSEL4_2'),
+                   (147, 'ODSEL4_3'), (148, 'ODSEL4_4'), (149, 'ODSEL4_5'), (150, 'ODSEL4_6'),
+                   (151, 'ODSEL5_0'), (152, 'ODSEL5_1'), (153, 'ODSEL5_2'), (154, 'ODSEL5_3'),
+                   (155, 'ODSEL5_4'), (156, 'ODSEL5_5'), (157, 'ODSEL5_6'), (158, 'ODSEL6_0'),
+                   (159, 'ODSEL6_1'), (160, 'ODSEL6_2'), (161, 'ODSEL6_3'), (162, 'ODSEL6_4'),
+                   (163, 'ODSEL6_5'), (164, 'ODSEL6_6'), (183, 'ENCLK0'), (184, 'ENCLK1'),
+                   (185, 'ENCLK2'), (186, 'ENCLK3'), (187, 'ENCLK4'), (188, 'ENCLK5'), (189, 'ENCLK6'),
+                   (190, 'ICPSEL5'), (191, 'SSCPOL'), (192, 'SSCON')]
+
 _pll_outputs = [(0, 'CLKOUT'), (1, 'LOCK'), (2, 'CLKOUTP'), (3, 'CLKOUTD'), (4, 'CLKOUTD3')]
 _plla_outputs = [(1, 'LOCK'), (10, 'CLKOUT0'), (11, 'CLKOUT1'), (12, 'CLKOUT2'), (13, 'CLKOUT3'),
                  (14, 'CLKOUT4'), (15, 'CLKOUT5'), (16, 'CLKOUT6'),
                  (24, 'MDRDO0'), (25, 'MDRDO1'), (26, 'MDRDO2'), (27, 'MDRDO3'), (28, 'MDRDO4'),
                  (29, 'MDRDO5'), (30, 'MDRDO6'), (31, 'MDRDO7'), ]
+_pll_outputs_138 = [(1, 'LOCK'), (10, 'CLKOUT0'), (11, 'CLKOUT1'), (12, 'CLKOUT2'), (13, 'CLKOUT3'),
+                 (14, 'CLKOUT4'), (15, 'CLKOUT5'), (16, 'CLKOUT6'), ]
+
 _iologic_inputs =  [(0, 'D'), (1, 'D0'), (2, 'D1'), (3, 'D2'), (4, 'D3'), (5, 'D4'),
                     (6, 'D5'), (7, 'D6'), (8, 'D7'), (9, 'D8'), (10, 'D9'), (11, 'D10'),
                     (12, 'D11'), (13, 'D12'), (14, 'D13'), (15, 'D14'), (16, 'D15'),
@@ -5337,6 +5371,46 @@ def dat_portmap(dat, dev, device):
                     for dst in hclk_pip_dsts:
                         if (row, col) in dev.hclk_pips and dst in dev.hclk_pips[row, col]:
                             dev.hclk_pips[row, col][bel.portmap[dst[4:]]] = dev.hclk_pips[row, col].pop(dst)
+                elif name == 'PLLA':
+                    # The PllInDlt table seems to indicate in which cell the
+                    # inputs are actually located.
+                    offx = 1
+                    for idx, nam in _pll_inputs_138:
+                        wire = wnames.wirenames[dat.gw5aStuff['PllIn'][idx]]
+                        off = dat.gw5aStuff['PllInDlt'][idx] * offx
+                        if off == 0:
+                            bel.portmap[nam] = wire
+                        else:
+                            # not our cell, make an alias
+                            bel.portmap[nam] = f'rPLL{nam}{wire}'
+                            # Himbaechel node
+                            dev.nodes.setdefault(f'X{col}Y{row}/rPLL{nam}{wire}', ("PLL_I", {(row, col, f'rPLL{nam}{wire}')}))[1].add((row, col + off, wire))
+
+                    for idx, nam in _pll_outputs_138:
+                        wire = wnames.wirenames[dat.gw5aStuff['PllOut'][idx]]
+                        off = dat.gw5aStuff['PllOutDlt'][idx] * offx
+                        if off == 0:
+                            bel.portmap[nam] = wire
+                        else:
+                            # not our cell, make an alias
+                            bel.portmap[nam] = f'rPLL{nam}{wire}'
+                        # Himbaechel node
+                        # if nam != 'LOCK':
+                        #    global_name = get_pllout_global_name(row, col + off, wire, device)
+                        # else:
+                        global_name = f'X{col}Y{row}/rPLL{nam}{wire}'
+                        dev.nodes.setdefault(global_name, ("PLL_O", set()))[1].update({(row, col, f'rPLL{nam}{wire}'), (row, col + off, wire)})
+                    # clock input
+                    # nam = 'CLKIN'
+                    # wire = wnames.wirenames[dat.gw5aStuff['PllClkin'][1][0]]
+                    # off = dat.gw5aStuff['PllClkin'][1][1] * offx
+                    # if off == 0:
+                    #     bel.portmap[nam] = wire
+                    # else:
+                    #     # not our cell, make an alias
+                    #     bel.portmap[nam] = f'rPLL{nam}{wire}'
+                    #     # Himbaechel node
+                    #     dev.nodes.setdefault(f'X{col}Y{row}/rPLL{nam}{wire}', ("PLL_I", {(row, col, f'rPLL{nam}{wire}')}))[1].add((row, col + off, wire))
                 elif name == 'PLLVR':
                     pll_idx = 0
                     if col != 27:

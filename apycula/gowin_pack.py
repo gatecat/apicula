@@ -362,6 +362,7 @@ _permitted_freqs = {
         "GW2A-18": (500, 625, 3.90625, 1250, 500),
         "GW2A-18C": (500, 625, 3.90625, 1250, 500),
         "GW5A-25A": (800, 1600, 6.25, 1600, 800),
+        "GW5AST-138C": (800, 1600, 6.25, 1600, 800),
         }
 # input params are calculated as described in GOWIN doc (UG286-1.7E_Gowin Clock User Guide)
 # fref = fclkin / idiv
@@ -732,7 +733,7 @@ def set_adc_attrs(db, idx, attrs):
 # typ - PLL type (RPLL, etc)
 def set_pll_attrs(db, typ, idx, attrs):
     attrs_upper(attrs)
-    if typ not in {'RPLL', 'PLLVR', 'PLLA'}:
+    if typ not in {'RPLL', 'PLLVR', 'PLLA', 'PLL'}:
         raise Exception(f"PLL type {typ} is not supported for now")
     if typ in {'RPLL', 'PLLVR'}:
         pll_inattrs = add_pll_default_attrs(attrs)
@@ -1038,7 +1039,7 @@ def set_pll_attrs(db, typ, idx, attrs):
             continue
 
     # static vs dynamic
-    if device in {'GW5A-25A'}:
+    if device in {'GW5A-25A', 'GW5AST-138C'}:
         # only static
         Fpfd = fclkin / idiv
         Fclkfb = Fpfd * fbdiv
@@ -3637,6 +3638,14 @@ def place(db, tilemap, bels, cst, args, slice_attrvals, extra_slots):
             #    print(rd)
         elif typ.startswith('RPLL'):
             pll_attrs = set_pll_attrs(db, 'RPLL', 0,  parms)
+            bits = set()
+            if 'PLL' in db.shortval[tiledata.ttyp]:
+                bits = get_shortval_fuses(db, tiledata.ttyp, pll_attrs, 'PLL')
+            #print(typ, tiledata.ttyp, bits)
+            for r, c in bits:
+                tile[r][c] = 1
+        elif typ.startswith('PLL') and device == 'GW5AST-138C':
+            pll_attrs = set_pll_attrs(db, 'PLL', 0,  parms)
             bits = set()
             if 'PLL' in db.shortval[tiledata.ttyp]:
                 bits = get_shortval_fuses(db, tiledata.ttyp, pll_attrs, 'PLL')
