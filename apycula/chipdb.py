@@ -958,7 +958,7 @@ def fse_fill_logic_tables(dev, fse, device):
     for ttyp in ttypes:
         if ttyp not in fse:
             continue
-        print(f"ttyp {ttyp}")
+        # print(f"ttyp {ttyp}")
         if 'longfuse' in fse[ttyp]:
             ttyp_rec = dev.longfuses.setdefault(ttyp, {})
             for lftable in fse[ttyp]['longfuse']:
@@ -976,7 +976,7 @@ def fse_fill_logic_tables(dev, fse, device):
         if 'shortval' in fse[ttyp]:
             ttyp_rec = dev.shortval.setdefault(ttyp, {})
             for stable in fse[ttyp]['shortval']:
-                print(f"    stable {_known_tables.get(stable, str(stable))}")
+                # print(f"    stable {_known_tables.get(stable, str(stable))}")
 
                 if stable in _known_tables:
                     table = ttyp_rec.setdefault(_known_tables[stable], {})
@@ -4003,6 +4003,8 @@ def get_pllout_global_name(row, col, wire, device):
 def need_create_multiple_nodes(device, name):
     if name.startswith("RPLLA") and device in {'GW2A-18', 'GW2A-18C'}:
         return True
+    if name.startswith("PLL") and device in {'GW5AST-138C'}:
+        return True
     if name == "BSRAM" or name.startswith("MULT") or name.startswith("PADD") or name.startswith("ALU54D"):
         return True
     if name.startswith('IOB') and device in {'GW5A-25A', 'GW5AST-138C'}:
@@ -5371,13 +5373,15 @@ def dat_portmap(dat, dev, device):
                     for dst in hclk_pip_dsts:
                         if (row, col) in dev.hclk_pips and dst in dev.hclk_pips[row, col]:
                             dev.hclk_pips[row, col][bel.portmap[dst[4:]]] = dev.hclk_pips[row, col].pop(dst)
-                elif name == 'PLLA':
+                elif name == 'PLLA' and device == "GW5AST-138C":
                     # The PllInDlt table seems to indicate in which cell the
                     # inputs are actually located.
                     offx = 1
                     for idx, nam in _pll_inputs_138:
                         wire = wnames.wirenames[dat.gw5aStuff['PllIn'][idx]]
                         off = dat.gw5aStuff['PllInDlt'][idx] * offx
+                        if nam == "CLKIN":
+                            print(col, row, nam, off, wire)
                         if off == 0:
                             bel.portmap[nam] = wire
                         else:
@@ -5387,19 +5391,23 @@ def dat_portmap(dat, dev, device):
                             dev.nodes.setdefault(f'X{col}Y{row}/rPLL{nam}{wire}', ("PLL_I", {(row, col, f'rPLL{nam}{wire}')}))[1].add((row, col + off, wire))
 
                     for idx, nam in _pll_outputs_138:
-                        wire = wnames.wirenames[dat.gw5aStuff['PllOut'][idx]]
+                        wire_type = 'PLL_O'
+                        bel.portmap[nam] = f'PLL{nam}'
+                        dev.wire_delay[bel.portmap[nam]] = 'X0'
+                        wire_idx = dat.gw5aStuff['PllOut'][idx]
                         off = dat.gw5aStuff['PllOutDlt'][idx] * offx
-                        if off == 0:
-                            bel.portmap[nam] = wire
-                        else:
+                        wire = wnames.wirenames[wire_idx]
+                        logic_wire = wire
+                        if off != 0:
+                            logic_wire = f'PLL{nam}{wire}'
                             # not our cell, make an alias
-                            bel.portmap[nam] = f'rPLL{nam}{wire}'
-                        # Himbaechel node
-                        # if nam != 'LOCK':
-                        #    global_name = get_pllout_global_name(row, col + off, wire, device)
-                        # else:
-                        global_name = f'X{col}Y{row}/rPLL{nam}{wire}'
-                        dev.nodes.setdefault(global_name, ("PLL_O", set()))[1].update({(row, col, f'rPLL{nam}{wire}'), (row, col + off, wire)})
+                            # Himbaechel node
+                            dev.nodes.setdefault(f'X{col}Y{row}/PLL{nam}{wire}', (wire_type, set()))[1].add((row, col, logic_wire))
+                            dev.nodes.setdefault(f'X{col}Y{row}/PLL{nam}{wire}', (wire_type, set()))[1].add((row, col + off, wire))
+                        if nam.startswith('CLKOUT'):
+                            dev.nodes.setdefault(f'PLL_X{col}_Y{row}_{nam}', (wire_type, set()))[1].add((row, col, f'PLL{nam}'))
+                        dev[row, col].pips.setdefault(logic_wire, {}).update({bel.portmap[nam]:set()})
+
                     # clock input
                     # nam = 'CLKIN'
                     # wire = wnames.wirenames[dat.gw5aStuff['PllClkin'][1][0]]

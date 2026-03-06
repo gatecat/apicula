@@ -107,6 +107,12 @@ def extra_pll_bels(cell, row, col, num, cellname):
         for off in [1, 2, 3]:
             yield ('RPLLB', int(row), int(col) + offx * off, num,
                 cell['parameters'], cell['attributes'], sanitize_name(cellname) + f'B{off}', cell)
+    elif device in {'GW5AST-138C'}:
+        if int(col) > 50:
+            offx = -1
+        for off in [1, 2, ]:
+            yield ('PLLB', int(row), int(col) + offx * off, num,
+                cell['parameters'], cell['attributes'], sanitize_name(cellname) + f'B{off}', cell)
     elif device in {'GW1N-1', 'GW1NZ-1', 'GW1N-4'}:
         for off in [1]:
             yield ('RPLLB', int(row), int(col) + offx * off, num,
@@ -276,6 +282,9 @@ def get_bels(data):
         if cell_type == 'rPLL':
             cell_type = 'RPLLA'
             yield from extra_pll_bels(cell, row, col, num, cellname)
+        if cell_type == 'PLL':
+            cell_type = 'PLLA'
+            yield from extra_pll_bels(cell, row, col, num, cellname)
         if cell_type in _clkdiv_cell_types:
             yield from extra_clkdiv_bels(cell, row, col, num, cellname)
         if cell_type in _bsram_cell_types:
@@ -386,7 +395,7 @@ def calc_pll_pump(fref, fvco):
 
     if device in {'GW2A-18', 'GW2A-18C'}:
         freq_Ri = _freq_R[1]
-    elif device in {'GW5A-25A'}:
+    elif device in {'GW5A-25A', 'GW5AST-138C'}:
         freq_Ri = _freq_R[2]
     else:
         freq_Ri = _freq_R[0]
@@ -398,7 +407,7 @@ def calc_pll_pump(fref, fvco):
         K0 = (-28.938 + math.sqrt(837.407844 - (385.07 - fvco) * 0.9892)) / 0.4846
         K1 = 0.1942 * K0 * K0 - 13.173 * K0 + 518.86
         C1 = 6.69244e-11
-    elif device in {'GW5A-25A'}:
+    elif device in {'GW5A-25A', 'GW5AST-138C'}:
         K1 = 120
         if fvco >= 1400.0:
             K1 = 240
@@ -3649,7 +3658,7 @@ def place(db, tilemap, bels, cst, args, slice_attrvals, extra_slots):
             bits = set()
             if 'PLL' in db.shortval[tiledata.ttyp]:
                 bits = get_shortval_fuses(db, tiledata.ttyp, pll_attrs, 'PLL')
-            #print(typ, tiledata.ttyp, bits)
+            print(typ, tiledata.ttyp, bits)
             for r, c in bits:
                 tile[r][c] = 1
         elif typ.startswith('PLLA'):
